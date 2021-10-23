@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "flux_correction.h": "c",
+        "Flux_Table.H": "cpp"
+    }
+}

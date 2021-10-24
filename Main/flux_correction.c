@@ -57,7 +57,7 @@ int GetTempIndex(int gtemp)
 	return Tempindex;
 }
 
-void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter) {
+void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter,int debug) {
 
     //int stemp=30; // 기준온도
     //ctemp=60;  // 현재 온도
@@ -84,8 +84,8 @@ void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter
 
     */
     //printf("\n[%s] start 온도=%d\n",__FUNCTION__,ctemp/2);
-    printf("\n[%s] start 온도=%d\n",__FUNCTION__,ctemp*5);
-    memset(&flux, 0, sizeof(FLUX));
+    if(debug) printf("\n[%s] start 온도=%d\n",__FUNCTION__,ctemp*5);
+    //memset(&flux, 0, sizeof(FLUX));
     memset(&Fp, 0, sizeof(FLUX_PARAMETER));
     memset(&Fi, 0, sizeof(FLUXINFO));
 
@@ -103,7 +103,7 @@ void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter
 
     // 기준비중에 대한 적용될 비중index (tWeight_Table)
     Fp.sGravityIndex=GetSGravityIndex(GetTempIndex(stemp), sgravity);
-    printf("\tFp.sGravityIndex=%d\n",Fp.sGravityIndex);  // 8
+    if(debug) printf("\tFp.sGravityIndex=%d\n",Fp.sGravityIndex);  // 8
         // 현재온도에 대한 비중값 (무게값)
     //tWeight = GetSGravity(GetTempIndex(ctemp)) * 10;
 
@@ -111,7 +111,7 @@ void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter
 	int diff;
     // 기준비중 - 기준온도의 비중값 테이블상으 비중값 = 약간 차이
 	diff = Fp.sGravity - tWeight_Table[GetTempIndex(Fp.sTemp)][Fp.sGravityIndex];
-    printf("\tdiff:%d\n",diff);
+    if(debug) printf("\tdiff:%d\n",diff);
     // 현재 온도의 비중값
 	tWeight = (tWeight_Table[GetTempIndex(ctemp)][Fp.sGravityIndex] + diff)*10;
     }
@@ -123,7 +123,7 @@ void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter
     MP = (float)((float)(rWeight - Fp.sAdj + (rWeight - tWeight)) / LITER10_PULSE_NUM);
     // 
     Fi.mp = (int)(MP * LITER10_PULSE_NUM);
-    printf("\tMP=%5.2f Fi.mp=%d\n",MP,Fi.mp);  // 8
+    if(debug) printf("\tMP=%5.2f Fi.mp=%d\n",MP,Fi.mp);  // 8
 
     // 10리터 기준 보정비율을 구함.  기준비중값 - 현재 온도비중값
     Fi.cWeight = rWeight - tWeight + (-Fp.sAdj);
@@ -135,34 +135,44 @@ void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter
     }
     Fi.Ratio = Fp.Ratio;
     //////////////////////////////////////////////////////
-    printf("\tFp.Ratio=%5.2f  rW:%d tW:%d\n",Fp.Ratio,rWeight,tWeight);  // 8
-    printf("[%s] end\n",__FUNCTION__);
+    if(debug) {
+        printf("\tFp.Ratio=%1.3f  rW:%d tW:%d\n",Fp.Ratio,rWeight,tWeight);  // 8
+        printf("[%s] end\n",__FUNCTION__);
+    }
 
 }
 
 /*
 
 */
-long flux_correction(long count)
+long flux_correction(long count,int debug)
 {
     long	DLiter; 
     float	Event;
     int		i;
 
+
     flux.rLiter = count;
     DLiter = flux.rLiter - flux.bLiter;
     ////printf(" DLiter:%d\n",(int)DLiter);
+
     flux.bLiter = flux.rLiter;
     for(i = 0; i <= FFLUXMETER; i++)  //1
         flux.EventCnt[i] += DLiter;
 
-    ////printf(" flux.EventCnt[0]:%d\n",(int)flux.EventCnt[0]);
-
-    //if(Fp.Ratio)	// 보정량에 대한 증감간격
+    //if(Fp.Ratio)	// 구간입력X비율
     {
         Event = flux.EventCnt[FADJ] * Fp.Ratio;
+        if(debug) printf(">>Total=%3.2f diff-input=%lu corrected=%3.2f Total=%3.2f input=%lu\n",
+            flux.rEvent[FADJ],
+            DLiter,
+            Event,
+            flux.rEvent[FADJ]+Event,
+            count);  // 8
+
         flux.rEvent[FADJ] += Event;
         flux.EventCnt[FADJ] = 0;
+
     }
 
     if(Fp.pFluxMeter) // 유량계 보정(%)
@@ -176,7 +186,7 @@ long flux_correction(long count)
 
     flux.Liter = (long)flux.rEvent[FADJ] + (long)flux.rEvent[FFLUXMETER];
     if(flux.Liter < 0)flux.Liter = 0;
-    //printf("flux.Liter=%ld  %ld\n",flux.Liter);  // 8
+
     return flux.Liter;
 
 }
@@ -194,7 +204,7 @@ void liter_disp(unsigned int liter)
 	if(Charge.rLiter2 != Charge.rLiter){
 
 		//FluxSec1 = 0; EnTick = 0;
-		liter = flux_correction(Charge.rLiter);
+		liter = flux_correction(Charge.rLiter,0);
 
 #ifndef __BURST_TEST__
 #endif
@@ -242,21 +252,56 @@ void liter_disp(unsigned int liter)
 }
 
 void flux_correction_test(){
-    int i;
+    //int i;
     //unsigned char pulse=0xff;
     //int toggle=0;
     int liter;
+    int corrected_liter;
 
-    flux_parameter_set(30,570,0, 30, 0);
-    flux_parameter_set(30,570,0, 10, 0);
-    flux_parameter_set(30,570,0, 60, 0);
+    flux_parameter_set(30,570,0, -300/5, 0,1);
+    flux_parameter_set(30,570,0, -200/5, 0,1);
+    flux_parameter_set(30,570,0, -150/5, 0,1);
+    flux_parameter_set(30,570,0, -100/5, 0,1);
+    flux_parameter_set(30,570,0, -50/5, 0,1);
+    flux_parameter_set(30,570,0, 0/5, 0,1);
+    flux_parameter_set(30,570,0, 10/5, 0,1);
+    flux_parameter_set(30,570,0, 100/5, 0,1);
+    flux_parameter_set(30,570,0, 150/5, 0,1);
+    flux_parameter_set(30,570,0, 200/5, 0,1);
+    flux_parameter_set(30,570,0, 250/5, 0,1);
+    flux_parameter_set(30,570,0, 300/5, 0,1);
+    flux_parameter_set(30,570,0, 350/5, 0,1);
+    printf("------------------------------------------->\n");
 
-    Fp.Ratio=0.8;
+
+
+
+
+
+    flux_parameter_set(30,570,0, 100/5, 0,1); Fp.Ratio=0.5;
+    memset(&flux, 0, sizeof(FLUX));
+    //corrected_liter=flux_correction(0,1);
+
+
 
     liter=1000;
-    printf("cnt:%d to +%d\n",liter,liter+50);
-    for(i=liter;i<liter+50;i++)
-        flux_correction(i);
+    //printf("cnt:%d to +%d\n",liter,liter+50);
+    //for(i=liter;i<liter+50;i++)
+    corrected_liter=flux_correction(liter,1);
+    printf("corrected_liter=%d liter=%d\n",corrected_liter,liter);
+
+    flux_parameter_set(30,570,0, 100/5, 0,1); Fp.Ratio=0.8;
+
+    liter=1100;
+    corrected_liter=flux_correction(liter,1);
+    printf("corrected_liter=%d liter=%d\n",corrected_liter,liter);
+
+    flux_parameter_set(30,570,0, 100/5, 0,1); Fp.Ratio=0.5;
+
+    liter=1200;
+    corrected_liter=flux_correction(liter,1);
+    printf("corrected_liter=%d liter=%d\n",corrected_liter,liter);
+
 
     //for(i=1000;i<22000;i++)
     //    liter_disp(i);

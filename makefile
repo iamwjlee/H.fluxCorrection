@@ -25,6 +25,7 @@ OBJS =  obj/main.o obj/flux_correction.o obj/timer.o
 $(EXE): $(OBJS)
 	$(CXX) $^ $(LDFLAGS) -o $@
 	copy $(EXE) release
+	del $(EXE)
 
 obj/main.o: Main/main.c 
 	$(CXX) $(CXXFLAGS) $< -o $@

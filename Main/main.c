@@ -13,7 +13,14 @@
 // -----------------------------------------------------------------------------
 int msec0=0;
 int msec1=0;
+int msec2=0;
+int state=0;
+int cliter=0;
+	int temp;
+int pStop=0;
+int smallValve=0;
 
+unsigned int pulseCnt=0;
 // -----------------------------------------------------------------------------
 
 static void flux_test();
@@ -24,68 +31,165 @@ char get_key() {
 	char ch=0;
     if(kbhit()) {
         ch= getch();
-		printf("%c",ch);
+		//printf("%c",ch);
 	}		
 	return ch;
 }
 
 void timer_handler(void)
 {
-  if(msec0) msec0--;
-  if(msec1) msec1--;
+	static int delay=0;
+	if(msec0) msec0--;
+	if(msec1) msec1--;
+	if(smallValve) {
+		if(++delay) {
+			if(delay>10) {
+				pulseCnt++;
+				delay=0;
+			}
+
+		}
+	}
+	else {
+		pulseCnt++;
+	}
+
+	if(msec2) msec2--;
+	if(!msec2) { //every 20msec
+		msec2=10;
+		if(state==0) return;
+		cliter=flux_correction(pulseCnt,0);
+		if(cliter > pStop) {
+			smallValve=1;
+		}
+
+		//flux_parameter_set(30,570,0,temp/5, 0,0);
+	}
+
+
 
 }
 
+
+
 int main( int argc, char* args[] )
 {
+	//static int count=0;
 	printf("Hello\n");
 
 	char key;
-    start_timer(100, &timer_handler);
+	char keyBuffer[64];
+	int keyIndex=0;
+    start_timer(2, &timer_handler);
+	memset(keyBuffer,0,sizeof(keyBuffer));
 
     while(1) {
 		key=get_key();
+		if(key==0) continue;
+		printf("%c",key);			
+		keyBuffer[keyIndex]=key;
+
+		if(keyBuffer[keyIndex]=='\r') {
+			keyBuffer[keyIndex]=0;
+			keyIndex=0;
+			printf("\n");
+
+			char *ptr = strtok(keyBuffer, " ");
+			char argv[8][8]={0};
+			int argc=0;
+			while(ptr!=NULL) {
+				strcpy(argv[argc++],ptr);
+				ptr=strtok(NULL," ");
+			}
+
+			if(!strcmp(keyBuffer,"quit")) {
+				break;
+			}
+			else if(!strcmp(keyBuffer,"test")) {
+				flux_correction_test();
+				
+			}
+			else if(!strcmp(keyBuffer,"flux")) {
+				flux_test();
+				
+			}	
+			else if(!strcmp(keyBuffer,"abc")) {
+				if(argv[1]) {
+					printf("my test[%s]\n",argv[1]);
+				}
+				else {		
+					printf("my test\n");
+				}
+			}		
+
+			memset(keyBuffer,0,sizeof(keyBuffer));
+		}
+		else {
+			keyIndex++;
+		}
+
+
+	}
+
+	#if 0
+    while(1) {
+		
+		//keyBuffer[keyIndex++]=get_key();
+		
+		key=get_key();
 		if(key=='q') break;
-		else if(key=='\r') printf("\n");
+		else if(key=='\r') {
+			//keyIndex=0;
+			printf("\n");
+			//memset(keyBuffer,0,sizeof(keyBuffer));
+
+
+		}
 		else if(key=='1') flux_correction_test();
 		else if(key=='2') flux_test();
 	
 		if(!msec0) {
-			msec0=10;
-			printf(".");
+			msec0=500;
+			//printf("%d",count++);
+			//printf("\r");
+			//printf(".");
 		}
 
-
 	}	
+	#endif
 	printf("exit program\n");
 
 	return 0;
 }
 
 void flux_test() {
-	int Liter;
-	int rLiter;
 	int pLiter;
-    //flux_parameter_set(30,570,0, 60, 0);
-	int temp;
-	temp=250;
+	temp=100;
 	//temp=240;
-    flux_parameter_set(30,570,0,temp/5, 0);
-	rLiter=0;
-	pLiter=20000;
+    flux_parameter_set(30,570,0,temp/5, 0,1);
+	//rLiter=0;
+	pLiter=2000;
+	
+	//charge start init
+	pulseCnt=0;
+	state=1;
+	cliter=0;	
+	pStop=pLiter-100;
+	smallValve=0;
 
 	//for(int i=0;i<pLiter+1;i++) {
 	while(1) {
-		rLiter++;
-		Liter=(int)flux_correction(rLiter);
-		//printf("rLiter=%d Liter=%d\n",rLiter,Liter);
-		if(Liter>=pLiter) break;
-		//rLiter+=100;
-		//rLiter=i;
+		//rLiter++;
+		//Liter=(int)flux_correction(pulseCnt);
+		//if(Liter>=pLiter) break;
+		if(cliter>=pLiter) {
+			printf("temp=%d pLiter=%d cliter=%d\n",temp,pLiter,cliter);
+			state=0;
+			break;
+		}
 	}
-
-	printf("temp=%d pLiter=%d rLiter=%d Liter=%d\n",temp,pLiter,rLiter,Liter);
-
+	
+	printf("pulseCnt=%d cliter=%d\n",pulseCnt,cliter);
 	/*
 		실제로 비중이 온도에 따라 0.001 차이가 
 		10도 564
@@ -104,6 +208,10 @@ temp=400 pLiter=20000 rLiter=21031
 
 temp=240 pLiter=20000 rLiter=20398 
 temp=250 pLiter=20000 rLiter=20436 
+
+
+		10 1.011 0.011
+		20 0.989 0.011
 	*/
 
 }

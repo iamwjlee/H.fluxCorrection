@@ -78,6 +78,6 @@ typedef struct{
 }CHARGESTATE;
 void flux_correction_test();
 int GetTempIndex(int gtemp);
-long flux_correction(long count);
-void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter);
+long flux_correction(long count,int debug);
+void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter,int debug);
 #endif

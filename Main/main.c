@@ -68,8 +68,8 @@ void flux_test() {
 	int pLiter;
     //flux_parameter_set(30,570,0, 60, 0);
 	int temp;
-	//temp=100;
-	temp=240;
+	temp=250;
+	//temp=240;
     flux_parameter_set(30,570,0,temp/5, 0);
 	rLiter=0;
 	pLiter=20000;
@@ -84,7 +84,7 @@ void flux_test() {
 		//rLiter=i;
 	}
 
-	printf("pLiter=%d rLiter=%d Liter=%d\n",pLiter,rLiter,Liter);
+	printf("temp=%d pLiter=%d rLiter=%d Liter=%d\n",temp,pLiter,rLiter,Liter);
 
 	/*
 		실제로 비중이 온도에 따라 0.001 차이가 
@@ -96,6 +96,14 @@ void flux_test() {
 		사실 LPG는 1도가 오르면 부피가 0.2~0.3%(동일한 압력일 때) 늘어난다. 
 		1L당 0.002~0.003L의 오차가 생긴다는 거다.
 		출처 : 더스쿠프(http://www.thescoop.co.kr)
+temp=10 pLiter=20000 rLiter=19420 
+temp=100 pLiter=20000 rLiter=19792 
+temp=200 pLiter=20000 rLiter=20213 
+temp=300 pLiter=20000 rLiter=20617
+temp=400 pLiter=20000 rLiter=21031 
+
+temp=240 pLiter=20000 rLiter=20398 
+temp=250 pLiter=20000 rLiter=20436 
 	*/
 
 }

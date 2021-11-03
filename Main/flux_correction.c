@@ -123,7 +123,17 @@ void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter
     MP = (float)((float)(rWeight - Fp.sAdj + (rWeight - tWeight)) / LITER10_PULSE_NUM);
     // 
     Fi.mp = (int)(MP * LITER10_PULSE_NUM);
-    if(debug) printf("\tMP=%5.2f Fi.mp=%d\n",MP,Fi.mp);  // 8
+    if(debug) {
+        float mpp= (float)(5700-10)/10000;
+        float mpp2= (float)(5700-10)/10000.0;
+        printf("\rWeight=%d tWeight=%d Fp.sAdj=%d\n",rWeight,tWeight,Fp.sAdj);  // 8
+
+        printf("\tmpp=%3.3f\n",mpp);  // 8
+        printf("\tmpp2=%3.3f\n",mpp2);  // 8
+
+        printf("\tMP=%3.3f Fi.mp=%d\n",MP,Fi.mp);  // 8
+
+    }
 
     // 10리터 기준 보정비율을 구함.  기준비중값 - 현재 온도비중값
     Fi.cWeight = rWeight - tWeight + (-Fp.sAdj);
@@ -251,6 +261,21 @@ void liter_disp(unsigned int liter)
 	Charge.rLiter2 = Charge.rLiter;
 }
 
+void adj_test(){
+    float realGram;
+    for(int i=0;i<30;i++) {
+        realGram=(i*57-21+50)/100.0;
+        printf("기차값[%d] 실제검량값[%2.2fg]\n",i,realGram);
+    }
+    printf("---\n");
+    for(int i=-1;i>=-30;i--) {
+        realGram=(i*57-99)/100.0;
+        printf("기차값[%d] 실제검량값[%2.2fg]\n",i,realGram);
+
+    }
+
+}
+
 void flux_correction_test(){
     //int i;
     //unsigned char pulse=0xff;
@@ -258,6 +283,7 @@ void flux_correction_test(){
     int liter;
     int corrected_liter;
 
+    #if 0
     flux_parameter_set(30,570,0, -300/5, 0,1);
     flux_parameter_set(30,570,0, -200/5, 0,1);
     flux_parameter_set(30,570,0, -150/5, 0,1);
@@ -271,8 +297,12 @@ void flux_correction_test(){
     flux_parameter_set(30,570,0, 250/5, 0,1);
     flux_parameter_set(30,570,0, 300/5, 0,1);
     flux_parameter_set(30,570,0, 350/5, 0,1);
-    printf("------------------------------------------->\n");
+    #endif
 
+    printf("------------------------------------------->\n");
+    flux_parameter_set(30,570,10, 190/5, 0,1);
+
+    printf("------------------------------------------->\n");
 
 
 

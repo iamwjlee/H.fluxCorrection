@@ -24,7 +24,7 @@ unsigned int pulseCnt=0;
 // -----------------------------------------------------------------------------
 
 static void flux_test();
-
+static void flux_test0();
 // -----------------------------------------------------------------------------
 
 char get_key() {
@@ -109,10 +109,20 @@ int main( int argc, char* args[] )
 				flux_correction_test();
 				
 			}
+			else if(!strcmp(keyBuffer,"adj")) {
+				adj_test();
+				
+			}
+
 			else if(!strcmp(keyBuffer,"flux")) {
 				flux_test();
 				
 			}	
+			else if(!strcmp(keyBuffer,"flux0")) { //
+				flux_test0();
+				
+			}	
+
 			else if(!strcmp(keyBuffer,"abc")) {
 				if(argv[1]) {
 					printf("my test[%s]\n",argv[1]);
@@ -161,14 +171,39 @@ int main( int argc, char* args[] )
 
 	return 0;
 }
-
-void flux_test() {
+void flux_test0() {
 	int pLiter;
-	temp=100;
+	//temp=-100;
+	temp=-100;
 	//temp=240;
     flux_parameter_set(30,570,0,temp/5, 0,1);
 	//rLiter=0;
-	pLiter=2000;
+	pLiter=20000;
+	
+	//charge start init
+	pulseCnt=0;
+	state=1;
+	cliter=0;	
+	pStop=pLiter-100;
+	smallValve=0;
+
+	while(1) {
+		pulseCnt++;
+		cliter=(int)flux_correction(pulseCnt,0);
+		if(cliter>=pLiter) break;
+	}
+	
+	printf("pulseCnt=%d cliter=%d\n",pulseCnt,cliter);
+
+}
+void flux_test() {
+	int pLiter;
+	temp=10;
+	//temp=-100;
+	//temp=240;
+    flux_parameter_set(30,570,0,temp/5, 0,1);
+	//rLiter=0;
+	pLiter=20000;
 	
 	//charge start init
 	pulseCnt=0;
@@ -215,3 +250,4 @@ temp=250 pLiter=20000 rLiter=20436
 	*/
 
 }
+

@@ -76,10 +76,8 @@ typedef struct{
 	unsigned long	Liter2;		// 전 샘플링 리터량(보정량)
 
 }CHARGESTATE;
-void adj_test();
-
 void flux_correction_test();
 int GetTempIndex(int gtemp);
-long flux_correction(long count,int debug);
-void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter,int debug);
+long flux_correction(long count);
+void flux_parameter_set(int stemp,int sgravity,int adj, int ctemp, int fluxmeter);
 #endif

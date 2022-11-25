@@ -75,7 +75,7 @@ void timer_handler(void)
 int main( int argc, char* args[] )
 {
 	//static int count=0;
-	printf("Hello\n");
+	printf("Hello1\n");
 
 	char key;
 	char keyBuffer[64];

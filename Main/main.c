@@ -353,11 +353,11 @@ int main( int argc, char* args[] )
 		const char *tmp="";
 		printf("char 포인터의 내용유무 확인\n");
 		if(*tmp) {
-			printf("tmp is [%x]  [%x]\n",tmp,*tmp);
+			printf("tmp is [%s]  [0x%x] [0x%x]\n",tmp,*tmp,*(tmp+1));
 
 		}
 		else {
-			printf("tmp ~is [%x]  [%x]\n",tmp,*tmp);
+			printf("tmp ~is [%s]  [0x%x] [0x%x]\n",tmp,*tmp,*(tmp+1));
 		}
 	}
     while(1) {

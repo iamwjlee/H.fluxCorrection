@@ -46,7 +46,7 @@ void save_binary() {
   	fseek(fp,0,SEEK_SET);
     fwrite(&food,sizeof(food_s),1,fp);
     fclose(fp);
-    printf("append writing food.a=%d food.b=%d food_size=%d filesize=%d time=%d\n",food.a,food.b,food_size,size,clock()-start);
+    printf("append writing food.a=%d food.b=%d food_size=%d filesize=%d time=%d\n",food.a,food.b,food_size,size,(int)(clock()-start));
 
     food_s res;
     fp=fopen("meb.log","r+b");

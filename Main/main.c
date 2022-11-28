@@ -384,9 +384,14 @@ int main( int argc, char* args[] )
 		else if(key=='s') booking_test(DB_SHOW);
 		else if(key=='r') booking_test(DB_DROP);
 		else if(key=='d') booking_test(DB_DELETE);
-		else if(key=='i') booking_test(DB_INSERT);
+		else if(key=='i') {
+			char latest[32]={0};
+			get_latest_log_file_name(latest); //booking_test(DB_INSERT);
+			if(strlen(latest)!=0)
+				printf("latest log file[%s]\n",latest);
+		}
 		else if(key=='t') save_binary(); //booking_test(DB_TABLE);
-		else if(key=='l') save_me(); //booking_test(DB_LAST);
+		else if(key=='l') save_text_append(); //booking_test(DB_LAST);
 		else if(key=='u') read_text_line(); ////booking_test(DB_UPDATE);
 		if(!msec0) {
 			msec0=10;

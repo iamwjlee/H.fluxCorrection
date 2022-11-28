@@ -1,7 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <dirent.h>
 #include <windows.h>
 
 
@@ -55,7 +55,7 @@ void save_binary() {
     fclose(fp);
     printf("last reading res.a=%d res.b=%d\n",res.a,res.b);
 }
-void save_me() {
+void save_text_append() {
 	struct tm lt;
 	time_t t=time(NULL);
 	lt=*localtime(&t);
@@ -117,3 +117,84 @@ void read_text_line() {
 
 }
 
+/*
+	displays the names of all files in the current directory
+*/
+
+
+int compare(const void *a, const void *b) {
+	return strcmp((char *)a,(char *)b);
+}
+int get_latest_log_file_name(char *latest_log_file) {
+
+	DIR *d;
+	int logfileCount=0;
+	d=opendir(".");
+	if(d) {
+		struct dirent *dir;
+		while((dir=readdir(d))!=NULL) {
+			if(dir->d_type==DT_REG) {
+				char *p= strstr(dir->d_name,"me-");
+				if(p!=NULL) logfileCount++;
+			}
+		}
+		closedir(d);
+	}
+	printf("logfileTotal=%d\n",logfileCount);
+
+	d=opendir(".");
+	#ifdef _STATIC_ARRY
+	char log_files[10][32];
+	#endif
+	int fileTotalCount=0;
+	//이차원 배열의 동적할당 //로그파일을 소팅하여 최근것을 찾기위해
+	char **fileNameArry=(char **)malloc(sizeof(int)*logfileCount);
+	#ifdef _STATIC_ARRY
+	memset(log_files,0,sizeof(log_files));
+	#endif
+	if(d) {
+		struct dirent *dir;
+		while((dir=readdir(d))!=NULL) {
+			if(dir->d_type==DT_REG) {
+				//printf("%s\n",dir->d_name);
+
+				char *p= strstr(dir->d_name,"me-");
+				
+				if(p!=NULL) {
+					//printf("-->%s\n",dir->d_name);
+					#ifdef _STATIC_ARRY
+					//strcpy(log_files[fileTotalCount++],dir->d_name);
+					#else 
+					fileNameArry[fileTotalCount]=(char *)malloc(sizeof(char)*32);
+					strcpy(fileNameArry[fileTotalCount],dir->d_name);
+					fileTotalCount++;
+					#endif
+				}
+
+			}
+
+		}
+		closedir(d);
+	}
+	// char *filesForSort; //모든메모리를 한번에 할당
+	// filesForSort=(char *)malloc( 32*(fileTotalCount-1));
+	#ifdef _STATIC_ARRY
+	for(int i=0;i<fileTotalCount;i++) printf("\t%s\n",log_files[i]);
+	qsort(log_files,fileTotalCount-1,sizeof(log_files[0]) ,compare);
+	for(int i=0;i<fileTotalCount;i++) printf("\t[sort]%s\n",log_files[i]);
+	#else
+	for(int i=0;i<fileTotalCount;i++) printf("\t%s\n",fileNameArry[i]);
+	qsort(fileNameArry,fileTotalCount,sizeof(fileNameArry[0]) ,compare);
+	for(int i=0;i<fileTotalCount;i++) printf("\t[sort]%s\n",fileNameArry[i]);
+
+	char latest_file[32];
+	strcpy(latest_file,fileNameArry[fileTotalCount-1]);
+	strcpy(latest_log_file,latest_file);
+	//printf("latest file name[%s]\n",latest_file);
+	for(int i=0;i<logfileCount;i++) free(fileNameArry[i]);
+	free(fileNameArry);
+	#endif
+	//free(filesForSort);
+	return 0;
+
+}

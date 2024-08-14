@@ -1,5 +1,12 @@
 #ifndef _soc_h
 #define _soc_h
+
+typedef struct {
+    int cs;
+    char name[32];
+}clients_info_t;
+// extern clients_info_t;
+
 int soc_test();
 
 

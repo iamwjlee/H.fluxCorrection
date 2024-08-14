@@ -16,6 +16,7 @@
 #include "db.h"
 #include <time.h>
 #include "file.h"
+#include "soc.h"
 /*
 dlltool -D sqlite3.dll -d sqlite3.def -l libsqlite3dll.a
 */
@@ -225,6 +226,40 @@ void my_test3() {
 	exception++;
 
 }
+#include "windows.h"
+#include "Psapi.h"
+#include "Shlwapi.h"
+#include <string>
+#include <iostream>
+int ProcessName(ULONG_PTR ProcessId, char *p)
+{
+    char szBuffer[MAX_PATH+1]="unknown";
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_TERMINATE, FALSE, ProcessId);
+
+     if(GetModuleFileNameEx(hProcess, NULL, szBuffer, MAX_PATH) == 0) {
+         sprintf(szBuffer, "null");
+	 }
+
+    CloseHandle(hProcess);
+	printf("szBuffer=%s\n",szBuffer);
+	strcpy(p,szBuffer);
+    return 0;
+}
+
+
+void myFunction5() {
+
+ 
+    wchar_t buffer[MAX_PATH] = {};
+    if (GetModuleFileNameW(nullptr, buffer, MAX_PATH)) { // current HMODULE = nullptr
+    std::wcout << L"current process name : " << buffer << std::endl;
+    } 
+	char p[64];
+	ProcessName(18692,p);
+	printf("결과 %s\n",p);
+
+
+}
 
 void myVariableFunction(const char *msg,...) {
 	char tmp[1024]={0};
@@ -360,6 +395,14 @@ int main( int argc, char* args[] )
 			printf("tmp ~is [%s]  [0x%x] [0x%x]\n",tmp,*tmp,*(tmp+1));
 		}
 	}
+
+	int testCount=0;
+	printf("보이는지 여부\n");
+	if(testCount++%100==0) {
+		printf("이거보여!\n");
+	}
+	soc_test();
+
     while(1) {
 		key=get_key();
 		if(key=='q') break;
@@ -380,6 +423,10 @@ int main( int argc, char* args[] )
 			 r=b-a;
 			printf("결과=%d\n",r);
 
+		}
+		else if(key=='5') {
+			printf("key5 pressed\n");
+			myFunction5();
 		}
 		else if(key=='s') booking_test(DB_SHOW);
 		else if(key=='r') booking_test(DB_DROP);
@@ -407,6 +454,10 @@ int main( int argc, char* args[] )
 		ResponsePrintState(&pstate);
 	}	
 	printf("exit program\n");
+
+	soc_test_stop();
+	// socRun=0;
+	Sleep(500);
 
 	return 0;
 }

@@ -3,6 +3,12 @@
         "flux_correction.h": "c",
         "Flux_Table.H": "cpp",
         "*.tcc": "cpp",
-        "string": "cpp"
-    }
+        "string": "cpp",
+        "windows.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled",
+	"files.encoding": "euckr",
+	"C_Cpp.dimInactiveRegions": false,
+	"editor.stickyScroll.enabled": true
+
 }

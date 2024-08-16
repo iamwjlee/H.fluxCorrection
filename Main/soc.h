@@ -12,4 +12,6 @@ int soc_test();
 
 // extern int socRun;
 int soc_test_stop();
+
+void log_msg(const char *msg,...);
 #endif

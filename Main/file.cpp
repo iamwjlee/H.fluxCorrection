@@ -18,10 +18,7 @@
 	새롭게 파일을 만들고 추가를 시작한다!
 	-> 바이너리파일로 적용가능한지
 */
-/*
 
-https://github.com/iamwjlee/H.fluxCorrection.git
-*/
 typedef struct {
     int a;
     int b;

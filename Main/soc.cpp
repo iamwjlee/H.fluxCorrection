@@ -1,8 +1,22 @@
-/*
-    tcp 멀티클라이언트
-    https://blog.naver.com/93lms/221412129565
 
-*/
+/**
+ ******************************************************************************
+ * File Name          : soc.cpp
+ * Description        : Andariel's Visage in D4S5
+ ******************************************************************************
+ *
+ * Copyright (C) 2005 JANGWEE DATA SYSTEM
+ *
+ *
+ *
+ * History :
+ *         2024-08-14 initiated by Andariel
+ *         tcpip server with multiple client connections 
+ *              client is connected to server always  
+ * 
+ *  
+ ******************************************************************************
+ */ 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,27 +32,27 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "soc.h"
+
 using namespace std;
 #define MAX_DATASIZE 512
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 5
 
 
 static pthread_t socTid;
 static pthread_t clients[MAX_CLIENTS];
 
-static SOCKET sc; //server socket
-static SOCKET cs; //client socket
+static SOCKET sc; //server socket fd
+static SOCKET cs; //client socket fd
 
-typedef struct {
-    int cs;
-    char name[32];
-}clients_info_t;
+
 
 clients_info_t csArray[MAX_CLIENTS];
-// static int csArray[MAX_CLIENTS];
 
 static struct sockaddr_in serverAddr;
 static struct sockaddr_in clientAddr;
+
+
 
 static void *clientThread(void *index) {
     int idx=  *(int *)index;
@@ -46,9 +60,9 @@ static void *clientThread(void *index) {
     int len=0;
 
     while(1) {
-        len=recv(csArray[idx].cs,(char *)buf,MAX_DATASIZE,0);  // blocking funtion
+        len=recv(csArray[idx].cs,(char *)buf,MAX_DATASIZE,0);  // non-blocking funtion 
         if(len>0) {
-            printf("idx=%d ip[%s] received=%d [%s]\n",idx,csArray[idx].name, len,buf);
+            log_msg("idx=%d ip[%s] received=%d [%s]\n",idx,csArray[idx].name, len,buf);
             memset(buf,0,MAX_DATASIZE);
             //send message to client
             const char *msg[10]={"Hello0","Hello1","Hello2","Hello3","Hello4","Hello5","Hello6","Hello7","Hello8","Hello9"};
@@ -57,7 +71,19 @@ static void *clientThread(void *index) {
                 // break;
             }
         }
+        else if(len==0) { //여기 계속들어온다
+        }
         else {
+            /*
+                클라이언트 프로그램이 종료시  바로 여기로 들어온다.
+                    -> 신기방통이네
+                랜선이 끊기면 이리로 오지 않는다 모른다
+                    -> 서버는 그사실을 알수 없고, 클라는 전송후 응답이 없으면 리컨넥션 한다
+
+
+            */
+            printf("recv error[%s] idx=%d len=%d\n",csArray[idx].name,idx,len);
+            memset(&csArray[idx],0,sizeof(clients_info_t));
             memset(buf,0,MAX_DATASIZE);                
             break;
         }
@@ -117,16 +143,31 @@ static void *socThread(void * arg) {
         char *client_ip=inet_ntoa(clientAddr.sin_addr);  
         int client_port=ntohs(clientAddr.sin_port);
 
-        printf("server: Connection accepted ip[%s] port=%d\n", client_ip,client_port);
+        int marking=-1;
         for(int i=0;i<MAX_CLIENTS;i++) {
-            if(csArray[i].cs==0) {
+            if( !strcmp(client_ip,csArray[i].name) || csArray[i].cs==0) {
                 csArray[i].cs=cs;
                 strcpy(csArray[i].name,client_ip);
-
+                marking=i;
                 pthread_create(&clients[i],NULL,clientThread,(void*)&i);
                 break;
             }
         }
+        printf("server: Connection accepted ip[%s] port=%d\n", client_ip,client_port);
+        /*
+ 
+            클라최초 접속시
+            클라재실행시 
+            네트웍이 끊기고 컨넥션을 재시도 하기 전에 연결복구 되면 여기에 안들어 오고 정상 작동
+            네트웍이 끊기고 컨넥션 재시도 하면 여기에 들어온다
+            즉, 클라가 컨넥션을 하기만 하면 여기로 무조건 들어와 -> 중복아이피 방지 해야
+             
+        */
+        for(int i=0;i<MAX_CLIENTS;i++) {
+            printf("\tcsArray[%d].name[%s]%s\n",i,csArray[i].name,marking==i?"<<":"");
+
+        }
+
 
         //message receive/send thread if needed
         while(0 && *running ) {
@@ -213,5 +254,31 @@ int soc_test_stop() {
     socRun=0;
     // pthread_join(socTid, &ret);
     return 0;
+
+}
+
+struct tm local_time;
+void log_msg(const char *msg,...) {
+    va_list arg;
+    char buf[1024];
+    char timeBuf[64];
+    // pthread_mutex_lock(&mutx);
+
+    time_t t=time(NULL); local_time= *localtime(&t);
+    memset(buf, 0, 1024);
+    memset(timeBuf, 0, sizeof(timeBuf));
+    sprintf(timeBuf,"[%04d-%02d-%02d %02d:%02d:%02d] ",
+         local_time.tm_year+1900, local_time.tm_mon+1, local_time.tm_mday,
+         local_time.tm_hour, local_time.tm_min, local_time.tm_sec);
+
+    strcat(buf,timeBuf);
+
+
+    va_start(arg,msg);
+    vsprintf(buf+strlen(buf) ,msg,arg);
+    // vsprintf(buf,msg,arg);
+    va_end(arg);
+    printf(buf);  // standard ouput
+    // pthread_mutex_unlock(&mutx);
 
 }

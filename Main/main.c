@@ -405,11 +405,17 @@ int main( int argc, char* args[] )
 	if(testCount++%100==0) {
 		printf("이거보여!\n");
 	}
-	soc_test();
+	soc_init(8764);
 
     while(1) {
+		soc_action();
+
 		key=get_key();
-		if(key=='q') break;
+		if(key=='q') {
+			soc_stop();
+			// Sleep(100);
+			break;
+		}
 		else if(key=='\r') printf("\n");
 		else if(key=='1') flux_correction_test();
 		else if(key=='2') flux_test();
@@ -457,12 +463,11 @@ int main( int argc, char* args[] )
 		setInterval2(&count001,10,MyTimerFunction);
 		ResponsePrintState(&pstate);
 	}	
-	printf("exit program\n");
 
-	soc_test_stop();
-	// socRun=0;
-	Sleep(500);
 
+	soc_close();
+	printf("main exit(1)\n");
+	exit(1);
 	return 0;
 }
 

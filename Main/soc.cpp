@@ -13,6 +13,7 @@
  *         2024-08-14 initiated by Andariel
  *         tcpip server with multiple client connections 
  *              client is connected to server always  
+ *         memory problem is solved
  * 
  *  
  ******************************************************************************
@@ -35,8 +36,7 @@
 #include "soc.h"
 
 using namespace std;
-#define MAX_DATASIZE 512
-#define MAX_CLIENTS 5
+
 
 
 static pthread_t socTid;
@@ -52,16 +52,25 @@ clients_info_t csArray[MAX_CLIENTS];
 static struct sockaddr_in serverAddr;
 static struct sockaddr_in clientAddr;
 
-
+rcv_text_t rcv;
+queue<rcv_text_t> rcv_q;
 
 static void *clientThread(void *index) {
     int idx=  *(int *)index;
     unsigned char buf[MAX_DATASIZE];
     int len=0;
 
-    while(1) {
+    while(csArray[idx].cs) {
         len=recv(csArray[idx].cs,(char *)buf,MAX_DATASIZE,0);  // non-blocking funtion 
         if(len>0) {
+            memcpy(&rcv.data,buf,len);
+            rcv.size=len;
+            strcpy(rcv.ipAddress,csArray[idx].name);
+            rcv.fd=csArray[idx].cs;
+            rcv.idx=idx;
+            rcv_q.push(rcv);
+
+            #ifdef __seperate__
             log_msg("idx=%d ip[%s] received=%d [%s]\n",idx,csArray[idx].name, len,buf);
             memset(buf,0,MAX_DATASIZE);
             //send message to client
@@ -70,6 +79,7 @@ static void *clientThread(void *index) {
                 printf("send error: %d\n",WSAGetLastError());
                 // break;
             }
+            #endif
         }
         else if(len==0) { //여기 계속들어온다
         }
@@ -83,11 +93,19 @@ static void *clientThread(void *index) {
 
             */
             printf("recv error[%s] idx=%d len=%d\n",csArray[idx].name,idx,len);
-            memset(&csArray[idx],0,sizeof(clients_info_t));
-            memset(buf,0,MAX_DATASIZE);                
+            // memset(&csArray[idx],0,sizeof(clients_info_t));
+            // memset(buf,0,MAX_DATASIZE);                
             break;
         }
     }
+    printf("exit clientThread[%s] \n",csArray[idx].name);
+    int status;
+    pthread_join(clients[idx], (void **)&status);
+    memset(&csArray[idx],0,sizeof(clients_info_t));
+    memset(buf,0,MAX_DATASIZE);                
+
+    printf("pthread_join status=%d\n",status);
+
     return 0;
 
 
@@ -96,6 +114,7 @@ static void *clientThread(void *index) {
 
 static void *socThread(void * arg) {
     int *running=(int *)arg;
+    // int run=*(int *)arg;
     #ifdef __moved__
     printf("soc test starting\n");
     WSADATA wsa;
@@ -133,10 +152,12 @@ static void *socThread(void * arg) {
     unsigned char buf[MAX_DATASIZE];
     int len=0;
     while(*running) {     //serverAddrThread
+
+        printf("running is zero %d\n",*running);
         int c = sizeof(struct sockaddr_in);
         cs = accept(sc , (struct sockaddr *)&clientAddr, &c); //여기가 블럭이네!!!! 왜냐 하면 클라가 보내고 연결을 끊는다
         if(cs==INVALID_SOCKET) {
-            printf("--->accept failed!  WSAGetLastError:%d" , WSAGetLastError());
+            printf("--->accept failed!  WSAGetLastError:%d\n" , WSAGetLastError());
             //break;
             continue;
         }
@@ -195,19 +216,22 @@ static void *socThread(void * arg) {
 
 
     printf("soc thread exiting\n");
-    void *ret;
-    pthread_join(socTid, &ret);
-    printf("soc thread exiting\n");
+    closesocket(sc);
+    // int status;
+    // int r;
+    // r=pthread_join(socTid, (void **)&status);
+    // if(r==0) printf("OKay pthread_join status=%d\n",status);
+    // else printf("Error pthread_join status=%d\n",status);
 
-    return 0;
+    return (void*)0;
 
 
 }
 int socRun=0;
 
-int soc_test() {
+int soc_init(int port) {
     socRun=1;
-
+    memset(&rcv,0,sizeof(rcv_text_t));
     //----------------------------------------------------------------
     printf("soc test starting\n");
     WSADATA wsa;
@@ -230,7 +254,7 @@ int soc_test() {
 
     memset((char*)&serverAddr,0, sizeof(serverAddr));
     serverAddr.sin_family       = AF_INET;
-    serverAddr.sin_port         = htons(8764);
+    serverAddr.sin_port         = htons(port);
     serverAddr.sin_addr.s_addr  = INADDR_ANY;
 
     memset(csArray,0,sizeof(csArray));
@@ -249,14 +273,50 @@ int soc_test() {
     return 0;
 }
 
-int soc_test_stop() {
-    // void *ret;
-    socRun=0;
-    // pthread_join(socTid, &ret);
-    return 0;
+int soc_close() {
 
+    Sleep(200);
+    if(0) {
+        int r;
+        r=pthread_cancel(socTid);
+        printf("pthread_cancel=%d\n",r);
+    }
+    int status;
+    int r=0;
+    r=pthread_join(socTid, (void **)&status);
+    if(r==0) printf("OKay pthread_join status=%d\n",status);
+    else printf("Error pthread_join status=%d\n",status);
+
+    return 0;
+}
+void soc_stop() {
+    socRun=0;
+    closesocket(sc);
+
+    for(int i=0;i<MAX_CLIENTS;i++) if(csArray[i].cs) csArray[i].cs=0;
+    Sleep(200); //logging in the thread first
+    printf("main program is stopping ...\n");
+    Sleep(3000);
 }
 
+int soc_action() {
+
+    if(!rcv_q.empty()) {
+        rcv_text_t r;
+        r=rcv_q.front();
+
+        const char *msg[10]={"Hello0","Hello1","Hello2","Hello3","Hello4","Hello5","Hello6","Hello7","Hello8","Hello9"};
+        if(send(r.fd,msg[r.idx],strlen(msg[r.idx]),0)==-1) {
+            printf("send error: %d\n",WSAGetLastError());
+            // break;
+        }
+        printf("<--rcv[%s][%s] -->send[%s]\n",r.ipAddress,(char *)r.data,msg[r.idx] );
+
+
+        rcv_q.pop();
+    }
+    return 0;
+}
 struct tm local_time;
 void log_msg(const char *msg,...) {
     va_list arg;

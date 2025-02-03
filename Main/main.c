@@ -30,6 +30,7 @@ int msec1=0;
 
 static void flux_test();
 static void band_maid();
+static void unionTest();
 // -----------------------------------------------------------------------------
 
 
@@ -278,7 +279,41 @@ void myVariableFunction(const char *msg,...) {
 	// printf("arg3=%d\n",*(int*)arg++);
 }
 
+void polling_rx() {
+	/*
+	qr,print,
+	호기, pp,setup data,tm,st에 대한 시간 응답
+	*/
+	printf("폴링 먼저 받어\n");
 
+}
+
+void polling_tx() {
+	static UINT8 FFCheck=0;	
+	for(int i=0;i<10;i++) {
+		if(!FFCheck--) {
+			FFCheck=1;
+			//호기++
+			printf("호기변경후에 en 보내\n");
+		}
+		else {
+			//만약 보낼것이 있다면 보내고
+			//아니면 en 보낸다
+			printf("en 또는 cmd전송\n");
+		}
+	}
+}
+void polling_test() {
+	// 마스터는 먼저 폴링을 시작해야 하는데 먼저보내고 응답을 받아야 
+	/*
+		보내고
+		받고,확인후 
+		다시 보내고 를 반복해야
+	*/
+	polling_rx();
+	polling_tx();
+
+}
 //구상
 
 void DisplayError() {
@@ -405,8 +440,17 @@ int main( int argc, char* args[] )
 	if(testCount++%100==0) {
 		printf("이거보여!\n");
 	}
-	soc_init(8764);
+	{
+		unsigned char a='a';
+		unsigned char b='b';
+		a&=~0x20;
+		b&=~0x20;
+		printf("a=%02x a[%c] b=%02x\n",a,a,b);
 
+	}
+	unionTest();
+
+	soc_init(8764);
     while(1) {
 		soc_action();
 
@@ -437,6 +481,9 @@ int main( int argc, char* args[] )
 		else if(key=='5') {
 			printf("key5 pressed\n");
 			myFunction5();
+		}
+		else if(key=='6') {
+			polling_test();
 		}
 		else if(key=='s') booking_test(DB_SHOW);
 		else if(key=='r') booking_test(DB_DROP);
@@ -470,6 +517,63 @@ int main( int argc, char* args[] )
 	exit(1);
 	return 0;
 }
+
+void unionTest() {
+	union {
+		struct {
+			char b;
+			char c;
+			char d;
+			char e;
+		}s;
+		// char b;
+		// char c;
+		// char d;
+		// char e;
+		int a;
+	}u;
+	u.a=0x12345678;
+	printf("u.a=0x%x 0x%x 0x%x 0x%x 0x%x\n",u.a,u.s.b,u.s.c,u.s.d,u.s.e);
+	u.s.b=0x11;
+	u.s.c=0x22;
+	u.s.d=0x33;
+	u.s.e=0x44;
+	printf("u.a=0x%x 0x%x 0x%x 0x%x 0x%x\n",u.a,u.s.b,u.s.c,u.s.d,u.s.e);
+
+	//okay
+	// union {
+		
+	// 	char b[4];
+	// 	int a;
+	// }u;
+	// u.a=0x12345678;
+	// printf("u.a=0x%x 0x%x 0x%x 0x%x 0x%x\n",u.a,u.b[0],u.b[1],u.b[2],u.b[3]);
+	// u.b[0]=0x11;
+	// u.b[1]=0x22;
+	// u.b[2]=0x33;
+	// u.b[3]=0x44;
+	// printf("u.a=0x%x 0x%x 0x%x 0x%x 0x%x\n",u.a,u.b[0],u.b[1],u.b[2],u.b[3]);
+
+
+}
+// struct {
+//     uint32_t	Data;
+// 	uint32_t     Otp;
+// 	union {
+// 		uint32_t  LogCount;
+// 		uint8_t     Temperature; //15도 고정값
+// 		uint8_t 	CodeCostUse; //거래처별단가사용여부 사용안함
+// 		uint8_t	 	rTemp; //기준온도(30)고정값 위에 Temperature와 별개!
+// 		uint8_t     momo1;
+// 	};
+// 	uint16_t 	Bejung; //기준비중(570)고정값
+// 	uint8_t 	FlowMeter; //유량계 보정값 사용안함
+// 	uint8_t 	momo2;
+// }Setup_t;
+
+
+
+
 
 void flux_test() {
 	int Liter;
